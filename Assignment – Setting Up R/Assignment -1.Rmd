@@ -1,0 +1,55 @@
+---
+title: "Assignment - 1"
+author: "Avinash Ravipudi"
+date: "2022-09-23"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Installed and calling the ISLR packages 
+```{r}
+#install.packages("ISLR")
+#library(ISLR)
+```
+#Importing carseats Dataset to R programming 
+```{r}
+options(stringsAsFactors = FALSE)
+carseats <- read.csv("~/Desktop/Assignment -1 BA/carseats.csv")
+head(carseats,10)
+```
+#calling ISLR LIbrary and printing summary of carseats data set
+```{r}
+library(ISLR)
+summary(carseats)
+```
+#Observations (Rows) contains in this dataset
+```{r}
+nrow(carseats)
+```
+#maximum value of the advertising attribute
+```{r}
+lm.fit=lm(Sales~Advertising+Price,data=carseats)
+max(carseats$Advertising)
+```
+#IQR for Price attribute.
+```{r}
+IQR(carseats$Price)
+```
+#plot aganist sales & Price
+```{r}
+Sales<- carseats$Sales
+Price<- carseats$Price
+plot(Sales,Price)
+```
+
+#correlation of the two attributes.
+```{r}
+#install.packages("ggpubr")
+library("ggpubr")
+print(cor(carseats$Sales,carseats$Price))
+#In an inverse relationship (a negative correlation), one variable increases while the other decreases.
+```
