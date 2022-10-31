@@ -1,0 +1,216 @@
+---
+title: "Assignemnt2-online Retail Analytics"
+author: "Avinash Ravipudi"
+date: "2022-10-19"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(caret)
+library(tidyverse)
+#install.packages("tinytex")
+library(tinytex)
+```
+#Importing Data set 
+```{r}
+#importing and converting data sets 
+getwd()
+OR<-read.csv("Online_Retail.csv")
+head(OR,10)
+# In this case, I'm computing the proportion of missing values for each variable in the data frame.
+colMeans(is.na(OR))
+```
+
+```{r}
+#Total number of transactions in dataset by nation and display only those more than 1%
+OR %>%   
+  group_by(Country) %>%
+  summarise(Total_Transcation = n(), Percent_Total = 100*(n()/nrow(OR))) %>%
+  filter(Percent_Total > 1.0) %>%   
+  arrange(desc(Percent_Total)) 
+```
+
+
+
+```{r}
+# added new variable to dataframe TransactionValue = Quality + Price
+OR$TransactionValue<-(OR$Quantity+OR$UnitPrice)
+head(OR,10)
+#Transcation Value by countries
+OR %>%   
+  group_by(Country) %>%
+  summarise(Total_Spend = sum(TransactionValue)) %>%
+  filter(Total_Spend > 130000) %>%   
+  arrange(desc(Total_Spend)) 
+
+```
+```{r}
+#I'm creating a temporary variable that will format the transaction date to mm/dd/yyyy, and I'm checking the format using the head command.
+Temp=strptime(OR$InvoiceDate,format='%m/%d/%Y %H:%M',tz='GMT')
+head(Temp)
+OR$New_Invoice_Date <- as.Date(Temp)# The Temp variable is used to format the New Invoice Date column into a date format.
+
+OR$New_Invoice_Date[20000]- OR$New_Invoice_Date[10]  
+
+OR$Invoice_Day_Week= weekdays(OR$New_Invoice_Date) #converting dates to weekdays
+
+OR$New_Invoice_Hour = as.numeric(format(Temp, "%H"))# Adding a new column containing the transaction hour. New Invoice Hour has been allocated
+
+OR$New_Invoice_Month = as.numeric(format(Temp, "%m"))#assigning a new column with the transaction month to New Invoice Hour
+
+#grouping the data frame by weekday and computing the percentage of transactions (by number) each day and returning the numbers in decreasing order of percentages
+
+OR %>%
+  group_by(Invoice_Day_Week) %>%
+  summarise(percent_of_transactions = 100*(n()/nrow(OR))) %>%
+  arrange(desc(percent_of_transactions))
+```
+
+```{r }
+#arranging the data frame by weekday, I'm calculating the proportion of transactions (by transaction values) every day and returning the percentages in decreasing order. 
+
+OR %>%
+  group_by(Invoice_Day_Week) %>%
+  summarise(percent_of_transactions_by_volume = 100*(sum(TransactionValue)/sum(OR$TransactionValue))) %>%
+  arrange(desc(percent_of_transactions_by_volume))
+
+```
+
+```{r }
+#I'm grouping the data frame by year, calculating the % of transactions (by transaction values) per month, and providing the results in decreasing order of percentages.
+
+OR %>%
+  group_by(New_Invoice_Month) %>%
+  summarise(percent_of_transactions_by_volume = 100*(sum(TransactionValue)/sum(OR$TransactionValue))) %>%
+  arrange(desc(percent_of_transactions_by_volume))
+
+```
+
+```{r }
+# producing a subset of data for Australian transactions, grouping by invoice date, and returning the year's top values
+
+subset(OR, Country == "Australia") %>%
+  group_by(New_Invoice_Date) %>%
+  summarise(n_transactions = n()) %>%
+  top_n(3)
+```
+
+
+```{r}
+# I'm grouping the data frame for transactions by hours and summarizing the data to get the percentage of transactions by number, and then I'm returning the values in ascending order.
+
+OR %>%
+  group_by(New_Invoice_Hour) %>%
+  summarise(percent_of_transactions = 100*(n()/nrow(OR))) %>%
+  arrange(percent_of_transactions)
+
+```
+
+
+```{r }
+# I'm now developing a new variable for Germany and visualizing transaction numbers on a histogram.
+Germany_Transactions <- subset(OR, Country == "Germany")
+hist(Germany_Transactions$TransactionValue, main = "Histogram of Transaction Values for Germany", xlab = "Transaction Values", ylab = "Frequency")
+```
+
+```{r }
+# I'm aggregating the data by customer, then summarizing it based on count and returning the top three numbers that are shown in decreasing value order.
+
+OR %>%
+  group_by(CustomerID) %>%
+  summarise(n_transactions = n()) %>%
+  top_n(3) %>%
+  arrange(desc(n_transactions))
+
+```
+
+
+```{r }
+#I'm aggregating the data by customer, then summarizing it based on transaction values and returning the top three numbers that are shown in decreasing value order.
+
+OR %>%
+  group_by(CustomerID) %>%
+  summarise(transaction_sum = sum(TransactionValue)) %>%
+  top_n(3) %>%
+  arrange(desc(transaction_sum))
+
+```
+
+
+
+
+
+
+```{r }
+# filtering out non-NA data, grouping by nation, and summarizing by total count
+
+OR %>%
+  filter(is.na(OR$CustomerID)) %>%
+  group_by(Country) %>%
+  summarise(n_missing_ID = n()) %>%
+  arrange(desc(n_missing_ID))
+```
+
+
+```{r }
+# by deleting "NA" CustomerIDs from a data frame
+
+Online_Retail_NA_Removed <- na.omit(OR)
+
+#constructing a data frame by eliminating cancelled transactions
+
+Online_Retail_NA_Neg_Removed <- subset(Online_Retail_NA_Removed, Quantity > 0)
+
+#generating a data frame containing only the customerID and transaction date
+
+Online_Retail_Subset <- Online_Retail_NA_Neg_Removed[,c("CustomerID","New_Invoice_Date")]
+
+#constructing a data frame that deletes numerous invoices from the same client on the same day
+
+Online_Retail_Subset_Distinct <- distinct(Online_Retail_Subset)
+
+#Organizing the data set by CustomerID and date, and calculating the average duration between successive transactions for each client. removing CustomerIDs that result in a NA value (i.e. having just one distinct transaction) and summarizing the data to get the average duration between shopping visits for all CustomerIDs
+
+Online_Retail_Subset_Distinct %>%
+  group_by(CustomerID) %>%
+  arrange(New_Invoice_Date) %>%
+  summarise(avg = mean(diff(New_Invoice_Date))) %>%
+  na.omit() %>%
+  summarise(avg_days_between_shopping = mean(avg))
+
+```
+
+
+```{r }
+#Creating two new subgroups for France that compute the total number of returns and total number of transactions and are used to determine the return rate.
+
+France_Transactions_Cancelled <- subset(OR, Country == "France" & Quantity < 0)
+France_Transactions <- subset(OR, Country == "France")
+France_Return_Rate <- 100*(nrow(France_Transactions_Cancelled) / nrow(France_Transactions))
+France_Return_Rate
+
+```
+
+
+```{r }
+ # I'm categorizing data by StockCode and item description, then summarizing it based on transaction values. and then returning the data in descending order
+
+OR %>%
+  group_by(StockCode, Description) %>%
+  summarise(transaction_sum = sum(TransactionValue)) %>%
+  arrange(desc(transaction_sum))
+```
+
+
+```{r }
+#By deleting duplicate entries, the length of the CustomerID vector is returned.
+length(unique(OR$CustomerID))
+```
