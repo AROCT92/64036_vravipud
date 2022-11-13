@@ -1,0 +1,100 @@
+---
+title: "Regression Analytics"
+author: "Avinash Ravipudi"
+date: "2022-11-10"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Q1.
+```{r}
+set.seed(2017)
+X=runif(100)*10
+Y=X*4+3.45
+Y=rnorm(100)*0.29*Y+Y
+```
+Q1a.
+```{r}
+plot(X,Y)
+#plot(Y~X,xlab="X",ylab="Y",col="black")
+```
+The plot depicts a linear relationship between Y and X. The values for Y grow as X increases. We may then develop a linear model to describe Y based on X.
+
+Q1b.
+```{r}
+Accuracy=lm(Y~X)
+Accuracy #y=4.465 + 3.611X
+summary(Accuracy)
+```
+Y is explained by the following equation: y = 4.465 + 3.611X. 
+The accuracy of the model is.6517, or 65%.
+
+Q1c.
+```{r}
+R_squared= 0.6517
+sqrt(R_squared)
+```
+The correlation coefficient is equal to the square root of the coefficient of determination.
+
+Q2.
+```{r}
+head(mtcars,10)
+summary(mtcars)
+```
+Q2a.
+Prediction by James
+```{r}
+James_model=lm(mtcars$hp~mtcars$wt)
+summary(James_model)
+```
+Prediction by Chris
+```{r}
+chris_model=lm(mtcars$hp~mtcars$mpg)
+summary(chris_model)
+```
+In comparison to James' viewpoint, Chris' viewpoint is "correct." Chris' model's accuracy is 0.6024, which is higher than James' model's accuracy of 0.4339.
+Q2b.
+```{r}
+hp_model=lm(hp~cyl+mpg,data=mtcars)
+predict(hp_model,data.frame(cyl=4,
+                            mpg=22))
+```
+A automobile with four calendars and an mpg of 22 has an estimated Horse Power of 88.94.
+
+Q3.
+```{r}
+options(repos = list(CRAN="http://cran.rstudio.com/"))
+#install.packages('mlbench')
+library(mlbench)
+data(BostonHousing)
+head(BostonHousing,10)
+```
+Q3a.
+```{r}
+Homes_price=lm(medv~crim+zn+ptratio+chas,data=BostonHousing)
+summary(Homes_price)
+```
+This model is not accurate due to the Multiple R-squared (accuracy) of 0.3599.
+
+Q3b. 
+
+   i.The house on the Chas River is 4.58393 times more expensive. This is due to the fact that the coefficient of chas is 4.58393. If the other house costs $1,000, the Chas River similar house would cost $4,583.93.
+   
+   ii.The adjacent household, which has a pupil-teacher ratio of 15, is more expensive. Because the ptratio coefficient is -1.49367, raising the ptratio by one unit lowers the property price by 1.49367. The value of the home drops by (15x1493.67) $22,405.05. With a ptratio of 18, the house's value decreases by (18x1493.67) $26,886.06. The house has a ptratio of 15 and costs $4,481.01.
+
+Q3c. Each variable is statistically significant because its p-value is less than 0.05.
+
+Q3d. 
+```{r}
+anova(Homes_price)
+```
+Order of importance ranked 1-4 (1 = most important, 4 = least important):
+  1. crim
+  2. ptratio
+  3. zn
+  4. chas
+The larger the sum squared, the more importance given to the variable.
